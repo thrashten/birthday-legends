@@ -59,6 +59,14 @@ try {
 // ══════════════════════════════════════════════
 //  ゲーム状態
 // ══════════════════════════════════════════════
+// ゲームモード: 'discussion' or 'stats'
+let GAME_MODE = 'discussion';
+
+function selectGameMode(mode) {
+  GAME_MODE = mode;
+  show('screen-mode');
+}
+
 const LOCAL = {
   playerId:  null,   // このデバイスのプレイヤーID
   playerIdx: null,   // 0〜3のインデックス
@@ -74,7 +82,7 @@ let roomUnsub = null; // Firebase リスナーの解除関数
 //  ユーティリティ
 // ══════════════════════════════════════════════
 // flexレイアウトが必要な画面
-const FLEX_SCREENS = new Set(['screen-title','screen-mode','screen-result','screen-ad']);
+const FLEX_SCREENS = new Set(['screen-title','screen-gamemode','screen-mode','screen-result','screen-ad']);
 
 function show(id) {
   document.querySelectorAll('.screen').forEach(s => {
@@ -187,6 +195,44 @@ async function loadPersonsDB() {
   return DB_LOADING;
 }
 
+// カテゴリ枠付き抽選（知性2・文化4・武力2・自由2）
+function pickBalanced(pool) {
+  const byCat = { '知性': [], '文化': [], '武力': [] };
+  for (const p of pool) {
+    const cat = p.category || '文化';
+    if (byCat[cat]) byCat[cat].push(p);
+  }
+
+  const result = [];
+  const usedNames = new Set();
+  const quotas = { '知性': 2, '文化': 4, '武力': 2 };
+
+  for (const [cat, quota] of Object.entries(quotas)) {
+    const available = byCat[cat].filter(p => !usedNames.has(p.name));
+    // 上位半分からランダム選出（有名すぎず無名すぎない）
+    const topHalf = available.slice(0, Math.max(quota, Math.floor(available.length / 2)));
+    const chosen = shuffle([...topHalf]).slice(0, quota);
+    // 不足分は残りから補完
+    if (chosen.length < quota) {
+      const rest = available.filter(p => !chosen.includes(p));
+      chosen.push(...shuffle(rest).slice(0, quota - chosen.length));
+    }
+    chosen.forEach(p => { result.push(p); usedNames.add(p.name); });
+  }
+
+  // 自由枠2人：残りからランダム
+  const free = pool.filter(p => !usedNames.has(p.name));
+  shuffle(free).slice(0, 2).forEach(p => { result.push(p); usedNames.add(p.name); });
+
+  // 10人未満はFALLBACKで補完
+  if (result.length < 10) {
+    const extra = FALLBACK.filter(f => !usedNames.has(f.name));
+    shuffle(extra).slice(0, 10 - result.length).forEach(p => result.push(p));
+  }
+
+  return result.slice(0, 10);
+}
+
 async function fetchPersons(month, day) {
   const key = `${String(month).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
 
@@ -194,20 +240,8 @@ async function fetchPersons(month, day) {
   const pool = db[key] || [];
 
   // 上位5人（sitelinks順・DBがすでにソート済み）
-  const top5 = pool.slice(0, 5);
-
-  // 残り（6人目以降）をシャッフルして5人選ぶ
-  const rest = shuffle([...pool.slice(5)]);
-  const random5 = rest.slice(0, 5);
-
-  let result = [...top5, ...random5];
-
-  // 不足時はFALLBACKで補完
-  if (result.length < 10) {
-    const extra = FALLBACK.filter(f => !result.some(r => r.name === f.name));
-    result = [...result, ...shuffle(extra)].slice(0, 10);
-  }
-
+  // カテゴリ枠付き抽選: 知性2・文化4・武力2・自由2
+  const result = pickBalanced(pool);
   return result;
 }
 
@@ -251,7 +285,7 @@ const FALLBACK = [
 //  タイトル → モード選択
 // ══════════════════════════════════════════════
 function goModeSelect() {
-  showAd(() => show('screen-mode'));
+  showAd(() => show('screen-gamemode'));
 }
 
 // 広告を表示してからコールバックを実行する汎用関数
@@ -700,63 +734,154 @@ function buildSelectPhase(room, players, revealed) {
   };
 }
 
-function buildRevealPhase(room, players, revealed) {
-  const round = room.round || 1;
-  const wrap = document.getElementById('battle-content');
-  const myInfo = room.players[LOCAL.playerId];
-  const isHost = LOCAL.isHost;
+// カテゴリの相性判定
+function getAffinity(myCard, oppCard) {
+  const adv = { '武力': '文化', '文化': '知性', '知性': '武力' };
+  const myCat = myCard.category || '文化';
+  const oppCat = oppCard.category || '文化';
+  if (adv[myCat] === oppCat) return 'adv';
+  if (adv[oppCat] === myCat) return 'dis';
+  return 'neu';
+}
+function calcEffectiveStat(val, aff) {
+  if (aff === 'adv') return Math.round(val * 1.2);
+  if (aff === 'dis') return Math.round(val * 0.8);
+  return val;
+}
 
-  // アリーナ表示
+function buildRevealPhase(room, players, revealed) {
+  const wrap = document.getElementById('battle-content');
+  const isHost = LOCAL.isHost;
+  const isStats = GAME_MODE === 'stats';
+  const catLabel = {'知性':'🎓 知性','文化':'🎨 文化','武力':'⚔ 武力'};
+  const catClass = {'知性':'cat-知性','文化':'cat-文化','武力':'cat-武力'};
+
+  // 相性情報（2人・スタッツモードのみ）
+  let affinityHTML = '';
+  if (isStats && players.length === 2) {
+    const myCard  = revealed[LOCAL.playerId];
+    const oppPid  = players.find(([pid]) => pid !== LOCAL.playerId)?.[0];
+    const oppCard = oppPid ? revealed[oppPid] : null;
+    if (myCard && oppCard) {
+      const aff = getAffinity(myCard, oppCard);
+      const affText = {adv:'有利 ×1.2', dis:'不利 ×0.8', neu:'同属性'};
+      const affCls  = {adv:'affinity-adv', dis:'affinity-dis', neu:'affinity-neu'};
+      affinityHTML = `<div class="affinity-box">
+        <span>${catLabel[myCard.category] || myCard.category}</span>
+        <span class="${affCls[aff]}"> → ${affText[aff]} </span>
+        <span>${catLabel[oppCard.category] || oppCard.category}</span>
+      </div>`;
+    }
+  }
+
+  // カード表示
   const arenaCards = players.map(([pid, p]) => {
     const card = revealed[pid];
-    return `
-      <div class="r-card ${pid === LOCAL.playerId ? 'mine' : ''}">
-        <span class="r-card-em">${sanitize(card.emoji)}</span>
-        <div class="r-card-owner">${sanitize(p.name)}${pid === LOCAL.playerId ? ' (あなた)' : ''}</div>
-        <div class="r-card-name">${sanitize(card.name)}</div>
-        <div class="r-card-year">${sanitize(card.birth)}</div>
-        <div class="r-card-field">${sanitize(card.field)}</div>
-        <div class="r-card-desc">${sanitize(card.achievement)}</div>
-        <a class="r-card-wiki" href="${safeUrl(card.wiki)}" target="_blank" rel="noopener noreferrer">Wikipedia →</a>
-      </div>
-    `;
+    const cat = card.category || '文化';
+    const statsHTML = isStats && card.stats ? `
+      <div class="stats-grid">
+        <div class="stat-item" id="stat-認知度-${pid}"><span class="stat-label">認知度</span><span class="stat-val">${card.stats['認知度']}</span></div>
+        <div class="stat-item" id="stat-時代性-${pid}"><span class="stat-label">時代性</span><span class="stat-val">${card.stats['時代性']}</span></div>
+        <div class="stat-item" id="stat-影響力-${pid}"><span class="stat-label">影響力</span><span class="stat-val">${card.stats['影響力']}</span></div>
+      </div>` : '';
+    return `<div class="r-card ${pid === LOCAL.playerId ? 'mine' : ''}">
+      <span class="r-card-em">${sanitize(card.emoji)}</span>
+      ${isStats ? `<span class="cat-badge ${catClass[cat]}">${catLabel[cat] || cat}</span>` : ''}
+      <div class="r-card-owner">${sanitize(p.name)}${pid === LOCAL.playerId ? ' (あなた)' : ''}</div>
+      <div class="r-card-name">${sanitize(card.name)}</div>
+      <div class="r-card-year">${sanitize(card.birth)}</div>
+      <div class="r-card-field">${sanitize(card.field)}</div>
+      <div class="r-card-desc">${sanitize(card.achievement)}</div>
+      ${statsHTML}
+      <a class="r-card-wiki" href="${safeUrl(card.wiki)}" target="_blank" rel="noopener noreferrer">Wikipedia →</a>
+    </div>`;
   }).join(players.length === 2 ? '<div class="vs-mark">VS</div>' : '');
 
   const arenaClass = players.length === 2 ? 'arena two' : 'arena many';
+  const HINTS = ['社会への影響力は？','認知度・知名度は？','時代を変えたか？','後世への影響は？'];
+  const hints = shuffle([...HINTS]).slice(0,3).map(h=>`<span class="chip">${h}</span>`).join('');
 
-  // ヒント
-  const HINTS = ['社会への影響力は？','認知度・知名度は？','時代を変えたか？','後世への影響は？','挑戦の大きさは？','普遍的な価値は？'];
-  const hints = shuffle([...HINTS]).slice(0, 3).map(h => `<span class="chip">${h}</span>`).join('');
-
-  // 投票ボタン（ホストのみ表示）
-  const voteHTML = isHost ? `
-    <div class="vote-box">
-      <div class="vote-title">全員で議論して勝者を決定（ホストが確定）</div>
-      <div class="vote-btns">
-        ${players.map(([, p]) => `
-          <button class="v-btn" onclick="hostDeclareWinner(${p.idx})">
-            🏆 ${sanitize(p.name)}の勝利
-          </button>
-        `).join('')}
-      </div>
-      <button class="draw-btn" onclick="hostDeclareDraw()">⇌ 引き分け（次ラウンドへ）</button>
-    </div>
-  ` : `
-    <div class="vote-waiting">
-      <div class="vw-text">💬 全員でディスカッション中...</div>
-      <div class="vw-sub">ホストが勝者を確定するまでお待ちください</div>
-    </div>
-  `;
+  // アクションパネル
+  let actionHTML = '';
+  if (isStats) {
+    actionHTML = isHost ? `
+      <div class="vote-box">
+        <div class="vote-title">スタッツを選んで勝負</div>
+        <div class="stat-select-row">
+          <button class="stat-sel-btn" onclick="hostJudgeStat('認知度')">認知度で勝負</button>
+          <button class="stat-sel-btn" onclick="hostJudgeStat('時代性')">時代性で勝負</button>
+          <button class="stat-sel-btn" onclick="hostJudgeStat('影響力')">影響力で勝負</button>
+        </div>
+        <button class="draw-btn" onclick="hostDeclareDraw()">⇌ ディスカッションで決める</button>
+      </div>` : `
+      <div class="vote-waiting">
+        <div class="vw-text">⚔ スタッツバトル中...</div>
+        <div class="vw-sub">ホストがスタッツを選択中...</div>
+      </div>`;
+  } else {
+    actionHTML = isHost ? `
+      <div class="vote-box">
+        <div class="vote-title">全員で議論して勝者を決定（ホストが確定）</div>
+        <div class="vote-btns">${players.map(([,p])=>`
+          <button class="v-btn" onclick="hostDeclareWinner(${p.idx})">🏆 ${sanitize(p.name)}の勝利</button>`).join('')}
+        </div>
+        <button class="draw-btn" onclick="hostDeclareDraw()">⇌ 引き分け（次ラウンドへ）</button>
+      </div>` : `
+      <div class="vote-waiting">
+        <div class="vw-text">💬 全員でディスカッション中...</div>
+        <div class="vw-sub">ホストが勝者を確定するまでお待ちください</div>
+      </div>`;
+  }
 
   wrap.innerHTML = `
     <div class="${arenaClass}" id="arena">${arenaCards}</div>
-    <div class="disc-box">
-      <div class="disc-title">💬 ディスカッションのヒント</div>
-      <div class="disc-chips">${hints}</div>
-    </div>
-    ${voteHTML}
-  `;
+    ${affinityHTML}
+    ${isStats ? '' : `<div class="disc-box"><div class="disc-title">💬 ディスカッションのヒント</div><div class="disc-chips">${hints}</div></div>`}
+    ${actionHTML}`;
 }
+
+// スタッツ判定（ホストのみ）
+async function hostJudgeStat(statName) {
+  if (!LOCAL.isHost) return;
+  const room = (await fbGet(ref(db, `rooms/${LOCAL.roomCode}`))).val();
+  const revealed = room.revealedCards?.[room.round] || {};
+  const players = Object.entries(room.players || {}).sort((a,b) => a[1].idx - b[1].idx);
+
+  const scores = players.map(([pid, p], i) => {
+    const card = revealed[pid];
+    if (!card?.stats) return {idx: p.idx, score: 0, pid};
+    const raw = card.stats[statName] || 0;
+    const aff = players.length === 2
+      ? getAffinity(card, revealed[players[1-i]?.[0]] || {})
+      : 'neu';
+    return {idx: p.idx, score: calcEffectiveStat(raw, aff), pid};
+  });
+
+  // ハイライト
+  scores.forEach(({pid}) => {
+    const el = document.getElementById(`stat-${statName}-${pid}`);
+    if (el) el.classList.add('selected-stat');
+  });
+
+  await new Promise(r => setTimeout(r, 700));
+
+  const maxScore = Math.max(...scores.map(s => s.score));
+  const winners = scores.filter(s => s.score === maxScore);
+
+  if (winners.length === 1) {
+    toast(`⚔ ${statName}で勝負！`);
+    await hostDeclareWinner(winners[0].idx);
+  } else {
+    toast('⇌ 同点！ディスカッションで決めます');
+    const voteBox = document.querySelector('.vote-box');
+    if (voteBox) voteBox.innerHTML = `
+      <div class="vote-title">同点！ 全員で議論して決めよ</div>
+      <div class="vote-btns">${players.map(([,p])=>`
+        <button class="v-btn" onclick="hostDeclareWinner(${p.idx})">🏆 ${sanitize(p.name)}の勝利</button>`).join('')}
+      </div>`;
+  }
+}
+
 
 // ══════════════════════════════════════════════
 //  勝者確定（ホストのみ）
@@ -1186,6 +1311,56 @@ input[type="date"].field-input {
   letter-spacing:.05em;
 }
 .data-note { font-family:'Space Mono',monospace; font-size:.55rem; color:rgba(184,134,11,.28); text-align:center; margin-top:1.5rem; }
+
+/* ════ カテゴリバッジ ════ */
+.cat-badge {
+  display:inline-block; font-size:.65rem; font-weight:700;
+  padding:.15rem .55rem; border-radius:2px; margin-bottom:.4rem;
+  font-family:'Space Mono',monospace; letter-spacing:.05em;
+}
+.cat-知性 { background:rgba(55,138,221,.2); color:#85b7eb; border:1px solid rgba(55,138,221,.35); }
+.cat-文化 { background:rgba(100,153,34,.2); color:#97c459; border:1px solid rgba(100,153,34,.35); }
+.cat-武力 { background:rgba(216,90,48,.2); color:#f0997b; border:1px solid rgba(216,90,48,.35); }
+
+/* ════ スタッツ表示 ════ */
+.stats-grid {
+  display:grid; grid-template-columns:repeat(3,1fr);
+  gap:.4rem; margin:.6rem 0;
+}
+.stat-item { text-align:center; background:rgba(245,234,214,.06); padding:.35rem .2rem; }
+.stat-label { font-family:'Space Mono',monospace; font-size:.55rem; color:rgba(245,234,214,.45); display:block; margin-bottom:.15rem; }
+.stat-val { font-family:'Playfair Display',serif; font-size:1.1rem; color:var(--gold-light); line-height:1; }
+.stat-item.selected-stat { background:rgba(184,134,11,.2); border:1px solid rgba(184,134,11,.4); }
+
+/* ════ 属性相性表示 ════ */
+.affinity-box {
+  display:flex; gap:.5rem; align-items:center; justify-content:center;
+  background:rgba(245,234,214,.04); border:1px solid rgba(184,134,11,.15);
+  padding:.6rem 1rem; margin:.75rem 0; font-size:.75rem;
+  font-family:'Space Mono',monospace;
+}
+.affinity-adv { color:#97c459; }
+.affinity-dis { color:#f0997b; }
+.affinity-neu { color:rgba(245,234,214,.5); }
+
+/* ════ スタッツ選択ボタン ════ */
+.stat-select-row { display:flex; gap:.6rem; justify-content:center; flex-wrap:wrap; margin:.75rem 0; }
+.stat-sel-btn {
+  background:rgba(245,234,214,.06); border:1px solid rgba(184,134,11,.25);
+  color:rgba(245,234,214,.7); font-family:'Space Mono',monospace;
+  font-size:.72rem; padding:.4rem 1rem; cursor:pointer; transition:all .2s;
+}
+.stat-sel-btn:hover { border-color:var(--gold); color:var(--gold-light); }
+.stat-sel-btn.active { background:rgba(184,134,11,.2); border-color:var(--gold); color:var(--gold-light); }
+
+/* ════ 勝敗結果アニメーション ════ */
+.result-banner {
+  text-align:center; padding:1rem;
+  animation:popIn .35s ease-out;
+  margin-bottom:1rem;
+}
+.result-banner-win { color:var(--gold-light); font-family:'Playfair Display',serif; font-size:1.4rem; }
+.result-banner-lose { color:rgba(245,234,214,.5); font-family:'Playfair Display',serif; font-size:1.1rem; }
 .privacy-link {
   display:block; text-align:center; margin-top:.6rem;
   font-family:'Space Mono',monospace; font-size:.6rem;
@@ -1238,7 +1413,7 @@ input[type="date"].field-input {
   <div class="title-divider"></div>
   <p class="title-desc">
     同じ誕生日の偉人たちで戦う<br>
-    ディスカッション型カードバトル
+    議論と戦略のカードバトル
   </p>
   <div class="mode-btns">
     <button class="btn btn-gold" onclick="goModeSelect()">ゲームを始める</button>
@@ -1280,7 +1455,35 @@ input[type="date"].field-input {
   </div>
 </div>
 
-<!-- モード選択 -->
+<!-- ゲームモード選択 -->
+<div id="screen-gamemode" class="screen" style="display:none">
+  <div class="page-head">
+    <div class="page-step">SELECT MODE</div>
+    <div class="page-title">ゲームモード</div>
+  </div>
+  <div class="mode-cards">
+    <div class="mode-card" onclick="selectGameMode('discussion')">
+      <span class="mode-card-icon">💬</span>
+      <div class="mode-card-title">ディスカッションモード</div>
+      <div class="mode-card-desc">
+        全員で議論して最も偉大な人物を決める<br>
+        トーク重視のパーティゲーム
+      </div>
+    </div>
+    <div class="mode-card" onclick="selectGameMode('stats')">
+      <span class="mode-card-icon">⚔</span>
+      <div class="mode-card-title">スタッツバトルモード</div>
+      <div class="mode-card-desc">
+        🎓知性 / 🎨文化 / ⚔武力 の属性で対決<br>
+        スタッツ（認知度・時代性・影響力）で勝負<br>
+        属性相性あり・引き分けはディスカッションへ
+      </div>
+    </div>
+  </div>
+  <button class="btn btn-ghost" onclick="show('screen-title')">← 戻る</button>
+</div>
+
+<!-- モード選択（部屋作成/参加） -->
 <div id="screen-mode" class="screen" style="display:none">
   <div class="page-head">
     <div class="page-title">モードを選択</div>
@@ -1304,7 +1507,7 @@ input[type="date"].field-input {
       </div>
     </div>
   </div>
-  <button class="btn btn-ghost" onclick="show('screen-title')">← 戻る</button>
+  <button class="btn btn-ghost" onclick="show('screen-gamemode')">← 戻る</button>
 </div>
 
 <!-- 部屋を作る -->
