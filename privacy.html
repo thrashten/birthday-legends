@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>プライバシーポリシー — Birthday Legends</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,400&family=Noto+Serif+JP:wght@400;700&family=Space+Mono&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #1a1209;
+    --parchment: #f5ead6;
+    --gold: #b8860b;
+    --gold-light: #d4a017;
+    --mist: rgba(245,234,214,0.06);
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    background: #110d06;
+    color: var(--parchment);
+    font-family: 'Noto Serif JP', serif;
+    min-height: 100vh;
+    line-height: 1.9;
+  }
+  body::before {
+    content:''; position:fixed; inset:0; z-index:0;
+    background:
+      repeating-linear-gradient(0deg,transparent,transparent 40px,rgba(184,134,11,.012) 40px,rgba(184,134,11,.012) 41px),
+      repeating-linear-gradient(90deg,transparent,transparent 40px,rgba(184,134,11,.012) 40px,rgba(184,134,11,.012) 41px);
+    pointer-events:none;
+  }
+  .wrap {
+    position: relative; z-index:1;
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 4rem 1.5rem 6rem;
+  }
+  .site-name {
+    font-family: 'Playfair Display', serif;
+    font-style: italic;
+    font-size: 1rem;
+    color: var(--gold-light);
+    letter-spacing: .08em;
+    margin-bottom: 2.5rem;
+    display: block;
+    text-decoration: none;
+  }
+  .site-name:hover { opacity: .8; }
+  h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(1.6rem, 4vw, 2.2rem);
+    color: var(--gold-light);
+    margin-bottom: .5rem;
+    line-height: 1.2;
+  }
+  .updated {
+    font-family: 'Space Mono', monospace;
+    font-size: .7rem;
+    color: rgba(184,134,11,.5);
+    letter-spacing: .1em;
+    margin-bottom: 3rem;
+    display: block;
+  }
+  .divider {
+    width: 100%; height: 1px;
+    background: linear-gradient(90deg, var(--gold), transparent);
+    margin-bottom: 3rem;
+  }
+  h2 {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.15rem;
+    color: var(--gold-light);
+    margin: 2.5rem 0 .75rem;
+    padding-left: .75rem;
+    border-left: 3px solid var(--gold);
+  }
+  p {
+    font-size: .9rem;
+    color: rgba(245,234,214,.75);
+    margin-bottom: 1rem;
+    line-height: 1.9;
+  }
+  ul {
+    padding-left: 1.5rem;
+    margin-bottom: 1rem;
+  }
+  ul li {
+    font-size: .9rem;
+    color: rgba(245,234,214,.75);
+    margin-bottom: .4rem;
+    line-height: 1.8;
+  }
+  a { color: var(--gold-light); text-decoration: underline; }
+  a:hover { opacity: .8; }
+  .contact-box {
+    background: var(--mist);
+    border: 1px solid rgba(184,134,11,.2);
+    border-left: 3px solid var(--gold);
+    padding: 1.25rem 1.5rem;
+    margin-top: 3rem;
+  }
+  .contact-box p { margin-bottom: 0; }
+  .back-btn {
+    display: inline-block;
+    margin-top: 3rem;
+    font-family: 'Space Mono', monospace;
+    font-size: .78rem;
+    color: rgba(184,134,11,.6);
+    text-decoration: none;
+    letter-spacing: .1em;
+    border-bottom: 1px solid rgba(184,134,11,.3);
+    padding-bottom: 2px;
+    transition: all .2s;
+  }
+  .back-btn:hover { color: var(--gold-light); border-color: var(--gold-light); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <a href="/" class="site-name">Birthday Legends</a>
+
+  <h1>プライバシーポリシー</h1>
+  <span class="updated">最終更新日：2025年5月1日</span>
+  <div class="divider"></div>
+
+  <p>
+    有名人誕生日バトルゲーム「Birthday Legends」（以下「当サービス」）は、
+    ユーザーのプライバシーを尊重し、個人情報の適切な取り扱いに努めます。
+    本プライバシーポリシーでは、当サービスにおける情報の収集・利用方法についてご説明します。
+  </p>
+
+  <h2>収集する情報</h2>
+  <p>当サービスでは、ゲームの利用に際して以下の情報を取り扱います。</p>
+  <ul>
+    <li>誕生月日（生まれた年は収集しません）</li>
+    <li>ゲーム内で入力したニックネーム</li>
+    <li>ゲームの進行状態（Firebase Realtime Databaseに一時保存）</li>
+  </ul>
+  <p>
+    ゲーム終了後、Firebase上のゲームデータは自動的に削除されます。
+    また、生まれた年は収集しないため、誕生日から個人を特定することはできません。
+  </p>
+
+  <h2>情報の利用目的</h2>
+  <p>収集した情報は以下の目的にのみ使用します。</p>
+  <ul>
+    <li>マルチプレイヤーゲームの進行・同期</li>
+    <li>同じ誕生月日の歴史的人物データの提供</li>
+    <li>サービスの改善・障害対応</li>
+  </ul>
+
+  <h2>第三者への情報提供</h2>
+  <p>
+    当サービスは、法令に基づく場合を除き、収集した情報を第三者に提供・販売・貸与することはありません。
+  </p>
+
+  <h2>外部サービスの利用</h2>
+  <p>当サービスでは以下の外部サービスを利用しています。</p>
+  <ul>
+    <li>
+      <strong>Firebase（Google LLC）</strong> —
+      マルチプレイヤー機能のためのリアルタイムデータベース。
+      <a href="https://firebase.google.com/support/privacy" target="_blank" rel="noopener">Firebaseプライバシーポリシー</a>
+    </li>
+    <li>
+      <strong>Wikidata（Wikimedia Foundation）</strong> —
+      歴史的人物データの提供源（CC0ライセンス）。
+      <a href="https://foundation.wikimedia.org/wiki/Policy:Privacy_policy" target="_blank" rel="noopener">Wikimediaプライバシーポリシー</a>
+    </li>
+    <li>
+      <strong>Google AdSense（Google LLC）</strong> —
+      広告配信サービス。Cookieを使用してユーザーの興味に基づく広告を表示する場合があります。
+      <a href="https://policies.google.com/privacy" target="_blank" rel="noopener">Googleプライバシーポリシー</a>
+    </li>
+    <li>
+      <strong>Vercel Inc.</strong> —
+      ホスティングサービス。アクセスログを収集する場合があります。
+      <a href="https://vercel.com/legal/privacy-policy" target="_blank" rel="noopener">Vercelプライバシーポリシー</a>
+    </li>
+  </ul>
+
+  <h2>Cookieについて</h2>
+  <p>
+    当サービスでは、Google AdSenseによる広告配信のためにCookieを使用する場合があります。
+    Cookieの使用を希望されない場合は、ブラウザの設定からCookieを無効にすることができます。
+    なお、Cookieを無効にすると一部の機能が利用できなくなる場合があります。
+  </p>
+  <p>
+    Google AdSenseによる広告の表示を無効にしたい場合は、
+    <a href="https://adssettings.google.com/" target="_blank" rel="noopener">Google広告設定</a>からオプトアウトできます。
+  </p>
+
+  <h2>アクセス解析について</h2>
+  <p>
+    当サービスでは、サービス改善のためにアクセス解析ツールを利用する場合があります。
+    これらのツールはCookieを使用して匿名のアクセス情報を収集しますが、個人を特定する情報は含まれません。
+  </p>
+
+  <h2>未成年者について</h2>
+  <p>
+    当サービスは13歳未満の方を対象としておらず、意図的に13歳未満の方の個人情報を収集することはありません。
+    保護者の方で、お子様が当サービスを利用していることにご懸念がある場合は、下記お問い合わせ先までご連絡ください。
+  </p>
+
+  <h2>プライバシーポリシーの変更</h2>
+  <p>
+    当サービスは、必要に応じて本プライバシーポリシーを変更することがあります。
+    重要な変更がある場合は、本ページにて通知します。
+    最新のプライバシーポリシーは常に本ページに掲載されます。
+  </p>
+
+  <div class="contact-box">
+    <h2 style="margin-top:0; border:none; padding:0; font-size:1rem; margin-bottom:.5rem;">お問い合わせ</h2>
+    <p>
+      本プライバシーポリシーに関するご質問・ご意見は、
+      以下のメールアドレスまでお寄せください。<br>
+      <span style="font-family:'Space Mono',monospace; font-size:.85rem; color:var(--gold-light);">
+        birthday.legends2026@gmail.com
+      </span>
+    </p>
+  </div>
+
+  <a href="/" class="back-btn">← ゲームに戻る</a>
+
+</div>
+</body>
+</html>

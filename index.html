@@ -1183,6 +1183,13 @@ input[type="date"].field-input {
   letter-spacing:.05em;
 }
 .data-note { font-family:'Space Mono',monospace; font-size:.55rem; color:rgba(184,134,11,.28); text-align:center; margin-top:1.5rem; }
+.privacy-link {
+  display:block; text-align:center; margin-top:.6rem;
+  font-family:'Space Mono',monospace; font-size:.6rem;
+  color:rgba(184,134,11,.4); text-decoration:none;
+  letter-spacing:.1em; transition:color .2s;
+}
+.privacy-link:hover { color:var(--gold-light); }
 
 /* ════ 広告画面 ════ */
 #screen-ad { display:flex; align-items:center; justify-content:center; }
@@ -1239,6 +1246,7 @@ input[type="date"].field-input {
   設定後にページを再読み込みしてください
 </div>
 <div class="data-note">AI生成データ (Claude / Anthropic) · Firebase Realtime DB</div>
+  <a href="/privacy.html" class="privacy-link" target="_blank">プライバシーポリシー</a>
 </div>
 
 <!-- 広告画面 -->
@@ -1464,6 +1472,7 @@ input[type="date"].field-input {
   <div class="result-scores" id="result-scores"></div>
   <div class="action-row">
     <button class="btn btn-gold" onclick="goHome()">トップへ戻る</button>
+  <a href="/privacy.html" class="privacy-link" target="_blank" style="margin-top:1.5rem;">プライバシーポリシー</a>
   </div>
 </div>
 
