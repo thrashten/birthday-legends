@@ -286,8 +286,8 @@ p {
   <div class="section">
     <p>
       「有名人誕生日バトルゲーム — Birthday Legends」は、自分の誕生月日と同じ日に生まれた
-      歴史上の偉人たちをカードとして使い、社会貢献度や認知度を全員でディスカッションしながら
-      勝敗を競う、2〜4人用のパーティゲームです。
+      歴史上の偉人たちをカードとして使い、議論と戦略で勝敗を競う2〜4人用のパーティゲームです。
+      ディスカッションモードとスタッツバトルモードの2種類から選んで遊べます。
     </p>
     <div class="note-box">
       <p>📱 各自のスマホで参加できます。手札は自分だけに表示され、他のプレイヤーには見えません。</p>
@@ -296,6 +296,28 @@ p {
   </div>
 
   <!-- ゲームの流れ -->
+  <div class="section">
+    <div class="section-label">Game Modes</div>
+    <h2>2つのゲームモード</h2>
+    <div class="step-card">
+      <div class="step-card-title"><span class="icon">💬</span>ディスカッションモード</div>
+      <p>全員で自由に議論して「最も偉大な偉人」を決めます。正解はなく、プレイヤーのトーク力と知識が試されます。ホストが全員の合意を確認して勝者を確定します。</p>
+    </div>
+    <div class="step-card">
+      <div class="step-card-title"><span class="icon">⚔</span>スタッツバトルモード</div>
+      <p>偉人には <strong style="color:var(--gold-light)">🎓 知性 / 🎨 文化 / ⚔ 武力</strong> の3つの属性があり、じゃんけんのように相性で有利不利が決まります。<strong style="color:var(--gold-light)">認知度・時代性・影響力</strong>の3つのスタッツから1つを選んで数値で勝負します。引き分けの場合はディスカッションモードに切り替えて議論で決めます。</p>
+    </div>
+    <div class="step-card">
+      <div class="step-card-title"><span class="icon">🔄</span>属性の相性（スタッツバトルのみ）</div>
+      <p style="margin-bottom:0.5rem">じゃんけんのように3すくみの関係があります。有利な属性のスタッツは×1.2、不利な属性は×0.8で計算されます。</p>
+      <div style="display:flex;gap:0.75rem;flex-wrap:wrap;font-family:'Space Mono',monospace;font-size:0.78rem;">
+        <span style="background:rgba(216,90,48,.15);border:1px solid rgba(216,90,48,.3);padding:.25rem .75rem;color:#f0997b;">⚔ 武力 → 🎨 文化 に強い</span>
+        <span style="background:rgba(100,153,34,.15);border:1px solid rgba(100,153,34,.3);padding:.25rem .75rem;color:#97c459;">🎨 文化 → 🎓 知性 に強い</span>
+        <span style="background:rgba(55,138,221,.15);border:1px solid rgba(55,138,221,.3);padding:.25rem .75rem;color:#85b7eb;">🎓 知性 → ⚔ 武力 に強い</span>
+      </div>
+    </div>
+  </div>
+
   <div class="section">
     <div class="section-label">Game Flow</div>
     <h2>ゲームの流れ</h2>
@@ -410,8 +432,12 @@ p {
       ディスカッションが盛り上がります。
     </p>
     <div class="step-card">
-      <div class="step-card-title"><span class="icon">💡</span>ポイント</div>
+      <div class="step-card-title"><span class="icon">💡</span>ポイント（ディスカッションモード）</div>
       <p>各偉人カードの「Wikipedia →」リンクから詳細情報を確認できます。ドラフト中に調べて、ディスカッションで活用しましょう。</p>
+    </div>
+    <div class="step-card">
+      <div class="step-card-title"><span class="icon">⚔</span>ポイント（スタッツバトルモード）</div>
+      <p>手札は知性2・文化4・武力2・自由2の枠付きで配られます。相手の誕生日によって属性が変わるため、どの属性のカードを残すかが勝負のカギです。</p>
     </div>
   </div>
 
@@ -438,6 +464,14 @@ p {
     <div class="step-card">
       <div class="step-card-title"><span class="icon">❓</span>途中で接続が切れた場合は？</div>
       <p>ページを再読み込みして、同じルームコードで再参加してください。ゲームの状態は保持されています。</p>
+    </div>
+    <div class="step-card">
+      <div class="step-card-title"><span class="icon">❓</span>スタッツの数値はどうやって決まりますか？</div>
+      <p>認知度はWikipediaの掲載言語数、時代性は生年（古いほど高い）、影響力は属性と認知度を組み合わせて自動計算されます。</p>
+    </div>
+    <div class="step-card">
+      <div class="step-card-title"><span class="icon">❓</span>スタッツバトルで同点になったら？</div>
+      <p>同点の場合は自動的にディスカッションモードに切り替わります。全員で議論してホストが勝者を確定してください。</p>
     </div>
   </div>
 
