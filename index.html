@@ -575,13 +575,26 @@ async function buildDraftScreen(room) {
   pool.forEach((person, idx) => {
     const c = document.createElement('div');
     c.className = 'p-card'; c.id = `pc-${idx}`;
+    // スタッツバトルモード時はカテゴリとスタッツを表示
+    const isDraftStats = GAME_MODE === 'stats';
+    const dCatLabel = {'知性':'🎓 知性','文化':'🎨 文化','武力':'⚔ 武力'};
+    const dCatClass = {'知性':'cat-知性','文化':'cat-文化','武力':'cat-武力'};
+    const dCat = person.category || '文化';
+    const dStatsHTML = isDraftStats && person.stats ? `
+      <div class="p-card-stats">
+        <div class="p-stat-item"><span class="p-stat-label">認知度</span><span class="p-stat-val">${person.stats['認知度']}</span></div>
+        <div class="p-stat-item"><span class="p-stat-label">時代性</span><span class="p-stat-val">${person.stats['時代性']}</span></div>
+        <div class="p-stat-item"><span class="p-stat-label">影響力</span><span class="p-stat-val">${person.stats['影響力']}</span></div>
+      </div>` : '';
     c.innerHTML = `
       <div class="p-card-face">${person.emoji}</div>
       <div class="p-card-body">
+        ${isDraftStats ? `<span class="cat-badge ${dCatClass[dCat]} p-cat-badge">${dCatLabel[dCat] || dCat}</span>` : ''}
         <div class="p-card-name">${person.name}</div>
         <div class="p-card-year">${person.birth}</div>
         <div class="p-card-field">${person.field}</div>
         <div class="p-card-desc">${person.achievement}</div>
+        ${dStatsHTML}
       </div>
       <a class="p-card-wiki" href="${safeUrl(person.wiki)}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()">Wikipedia →</a>
     `;
@@ -1222,6 +1235,11 @@ input[type="date"].field-input {
 .p-card-field { font-size:.58rem; color:var(--crimson); font-weight:700; margin-bottom:.2rem; }
 .p-card-desc { font-size:.6rem; color:rgba(26,18,9,.65); line-height:1.5; }
 .p-card-wiki { display:block; text-align:right; font-family:'Space Mono',monospace; font-size:.52rem; color:var(--sage); text-decoration:none; padding:.2rem .5rem; border-top:1px solid rgba(26,18,9,.08); }
+.p-cat-badge { font-size:.6rem; padding:.12rem .5rem; display:inline-block; margin-bottom:.25rem; }
+.p-card-stats { display:flex; gap:2px; margin-top:.4rem; }
+.p-stat-item { flex:1; text-align:center; background:rgba(26,18,9,.07); padding:.25rem .1rem; display:flex; flex-direction:column; gap:2px; }
+.p-stat-label { font-family:'Space Mono',monospace; font-size:.5rem; color:rgba(26,18,9,.65); }
+.p-stat-val { font-family:'Playfair Display',serif; font-size:.9rem; font-weight:700; color:var(--ink); line-height:1; }
 
 /* ════ 対戦 ════ */
 #screen-battle { padding:1.25rem 1rem 5rem; }
